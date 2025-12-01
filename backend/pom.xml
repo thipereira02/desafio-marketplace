@@ -10,7 +10,7 @@
 	<artifactId>checkin</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>checkin</name>
-	<description>Sistema de Check-in de Funcionarios</description>
+	<description>Marketplace de Produtos Simples</description>
 	
 	<properties>
 		<java.version>17</java.version>
