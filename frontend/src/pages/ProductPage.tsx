@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
 import { ShoppingCart, Plus, Trash2 } from 'lucide-react';
-import { PageContainer, ContentGrid, BaseCard, Title, BaseButton, Input } from '../components/SharedStyles';
+import {
+  PageContainer,
+  ContentGrid,
+  BaseCard,
+  Title,
+  BaseButton,
+  Input,
+} from '../components/SharedStyles';
 
-// --- TIPOS ---
 interface Product {
   id: number;
   name: string;
@@ -16,7 +22,6 @@ interface CartItem extends Product {
   quantity: number;
 }
 
-// --- ESTILOS LOCAIS ---
 const ProductGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -48,100 +53,119 @@ const CartItemRow = styled.div`
 export function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  
-  // Estado para formulário de novo produto
+
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [newStock, setNewStock] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-  // Carregar produtos ao iniciar
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  async function fetchProducts() {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/products`);
       setProducts(response.data);
     } catch (error) {
       console.error('Erro ao buscar produtos', error);
     }
-  }
+  }, [API_URL]);
 
-  // Criar Produto (Requisito: Tela para adicionar) 
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
   async function handleCreateProduct(e: React.FormEvent) {
     e.preventDefault();
     try {
       await axios.post(`${API_URL}/products`, {
         name: newName,
         price: parseFloat(newPrice),
-        stock: parseInt(newStock)
+        stock: parseInt(newStock),
       });
       alert('Produto cadastrado!');
-      setNewName(''); setNewPrice(''); setNewStock('');
-      fetchProducts(); // Recarrega a lista
+      setNewName('');
+      setNewPrice('');
+      setNewStock('');
+      fetchProducts();
     } catch (error) {
+      console.error(error);
       alert('Erro ao criar produto. Verifique os dados.');
     }
   }
 
-  // Adicionar ao Carrinho
   function addToCart(product: Product) {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        // Se já existe, aumenta quantidade (validando estoque localmente)
         if (existing.quantity >= product.stock) {
           alert('Estoque limite atingido no carrinho!');
           return prev;
         }
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
+        );
       }
       return [...prev, { ...product, quantity: 1 }];
     });
   }
 
-  // Remover do Carrinho
   function removeFromCart(id: number) {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart((prev) => prev.filter((item) => item.id !== id));
   }
 
-  // Calcular Total [cite: 55]
-  const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   return (
     <PageContainer>
-      <Title>Marketplace <span style={{color: '#2563eb'}}>Dev</span></Title>
+      <Title>
+        Marketplace <span style={{ color: '#2563eb' }}>Dev</span>
+      </Title>
 
       <ContentGrid>
-        {/* ESQUERDA: Lista e Cadastro */}
-        <div style={{display: 'flex', flexDirection: 'column', gap: '2rem'}}>
-          
-          {/* Formulário de Cadastro Rápido */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <BaseCard>
             <h3>Cadastrar Novo Produto</h3>
-            <form onSubmit={handleCreateProduct} style={{display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap'}}>
-              <Input placeholder="Nome" value={newName} onChange={e => setNewName(e.target.value)} required style={{flex: 2}} />
-              <Input placeholder="Preço" type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(e.target.value)} required style={{flex: 1}} />
-              <Input placeholder="Estoque" type="number" value={newStock} onChange={e => setNewStock(e.target.value)} required style={{flex: 1}} />
-              <BaseButton type="submit" style={{width: 'auto'}}><Plus size={20}/></BaseButton>
+            <form
+              onSubmit={handleCreateProduct}
+              style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}
+            >
+              <Input
+                placeholder="Nome"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+                style={{ flex: 2 }}
+              />
+              <Input
+                placeholder="Preço"
+                type="number"
+                step="0.01"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                required
+                style={{ flex: 1 }}
+              />
+              <Input
+                placeholder="Estoque"
+                type="number"
+                value={newStock}
+                onChange={(e) => setNewStock(e.target.value)}
+                required
+                style={{ flex: 1 }}
+              />
+              <BaseButton type="submit" style={{ width: 'auto' }}>
+                <Plus size={20} />
+              </BaseButton>
             </form>
           </BaseCard>
 
-          {/* Listagem  */}
           <ProductGrid>
-            {products.map(p => (
+            {products.map((p) => (
               <ProductCard key={p.id}>
                 <h4>{p.name}</h4>
                 <Price>R$ {p.price.toFixed(2)}</Price>
-                <p style={{fontSize: '0.8rem', color: '#6b7280'}}>Estoque: {p.stock}</p>
-                <div style={{marginTop: '1rem'}}>
-                  <BaseButton 
-                    onClick={() => addToCart(p)}
-                    disabled={p.stock === 0}
-                  >
+                <p style={{ fontSize: '0.8rem', color: '#6b7280' }}>Estoque: {p.stock}</p>
+                <div style={{ marginTop: '1rem' }}>
+                  <BaseButton onClick={() => addToCart(p)} disabled={p.stock === 0}>
                     {p.stock === 0 ? 'Esgotado' : 'Adicionar'}
                   </BaseButton>
                 </div>
@@ -150,38 +174,63 @@ export function ProductPage() {
           </ProductGrid>
         </div>
 
-        {/* DIREITA: Carrinho Lateral  */}
         <div>
-          <BaseCard style={{position: 'sticky', top: '2rem'}}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '1rem'}}>
+          <BaseCard style={{ position: 'sticky', top: '2rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem',
+                borderBottom: '1px solid #eee',
+                paddingBottom: '1rem',
+              }}
+            >
               <ShoppingCart size={24} />
               <h3>Seu Carrinho</h3>
             </div>
 
             {cart.length === 0 ? (
-              <p style={{color: '#9ca3af', textAlign: 'center'}}>Carrinho vazio.</p>
+              <p style={{ color: '#9ca3af', textAlign: 'center' }}>Carrinho vazio.</p>
             ) : (
               <>
-                {cart.map(item => (
+                {cart.map((item) => (
                   <CartItemRow key={item.id}>
                     <div>
                       <strong>{item.name}</strong>
-                      <div style={{fontSize: '0.8rem'}}>
+                      <div style={{ fontSize: '0.8rem' }}>
                         {item.quantity}x R$ {item.price.toFixed(2)}
                       </div>
                     </div>
-                    <button onClick={() => removeFromCart(item.id)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer'}}>
-                      <Trash2 size={18}/>
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 size={18} />
                     </button>
                   </CartItemRow>
                 ))}
-                
-                <div style={{marginTop: '1.5rem', borderTop: '2px solid #eee', paddingTop: '1rem'}}>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 'bold'}}>
+
+                <div
+                  style={{ marginTop: '1.5rem', borderTop: '2px solid #eee', paddingTop: '1rem' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                    }}
+                  >
                     <span>Total:</span>
                     <span>R$ {total.toFixed(2)}</span>
                   </div>
-                  <BaseButton style={{marginTop: '1rem', backgroundColor: '#059669'}}>
+                  <BaseButton style={{ marginTop: '1rem', backgroundColor: '#059669' }}>
                     FINALIZAR COMPRA
                   </BaseButton>
                 </div>

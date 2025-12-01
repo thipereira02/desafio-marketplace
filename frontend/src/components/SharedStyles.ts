@@ -46,8 +46,13 @@ export const BaseButton = styled.button`
   transition: 0.2s;
   width: 100%;
 
-  &:hover { background-color: #1d4ed8; }
-  &:disabled { background-color: #9ca3af; cursor: not-allowed; }
+  &:hover {
+    background-color: #1d4ed8;
+  }
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
 `;
 
 export const Input = styled.input`
