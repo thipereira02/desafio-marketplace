@@ -52,7 +52,7 @@ A API estará disponível em: http://localhost:8080
 
 #### 🔗 Swagger (Docs): http://localhost:8080/swagger-ui/index.html
 
-### 2. Rodar o Frontend
+### 3. Rodar o Frontend
 ```bash
 cd frontend
 npm install
